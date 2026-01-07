@@ -1,0 +1,9 @@
+librosa
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+openai-whisper
+torch
+torchvision
