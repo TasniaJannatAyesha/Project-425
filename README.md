@@ -66,6 +66,7 @@ To install all required dependencies, run:
 
 ```bash
 pip install torch torchvision torchaudio librosa openai-whisper scikit-learn pandas numpy matplotlib seaborn
+
 Usage
 Run the pipeline in the following order from your terminal:
 
@@ -91,7 +92,6 @@ python src/medium_task.py
 
 # Hard Task: Disentangled Beta-VAE & t-SNE Visualization
 python src/hard_task.py
-
 📊 Key Results
 Linearity of Audio: For simple spectral features (MFCCs), linear PCA outperforms VAEs, suggesting the manifold of standard audio features is largely linear.
 
