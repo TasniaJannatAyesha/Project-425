@@ -5,8 +5,7 @@ class HybridConvVAE(nn.Module):
     def __init__(self, audio_dim, lyric_dim, latent_dim=32):
         super(HybridConvVAE, self).__init__()
         
-        # 1. Audio Encoder (Convolutional)
-        # We treat MFCCs as a sequence that the CNN can "slide" over
+        
         self.audio_conv = nn.Sequential(
             nn.Conv1d(1, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
@@ -14,18 +13,17 @@ class HybridConvVAE(nn.Module):
             nn.Flatten()
         )
         
-        # 2. Hybrid Projection (Combining Audio + Lyrics)
-        # 16 filters * (audio_dim/2) + lyric_dim
+    
         self.combined_dim = 16 * (audio_dim // 2) + lyric_dim
         
         self.fc_mu = nn.Linear(self.combined_dim, latent_dim)
         self.fc_logvar = nn.Linear(self.combined_dim, latent_dim)
         
-        # 3. Decoder
+      
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, audio_dim + lyric_dim) # Reconstruct both
+            nn.Linear(128, audio_dim + lyric_dim) 
         )
 
     def reparameterize(self, mu, logvar):
@@ -34,10 +32,10 @@ class HybridConvVAE(nn.Module):
         return mu + eps * std
 
     def forward(self, audio, lyrics):
-        # Audio needs a 'channel' dimension for Conv1d: (batch, 1, audio_dim)
+       
         a_feat = self.audio_conv(audio.unsqueeze(1))
         
-        # Concatenate audio features with lyric embeddings
+      
         combined = torch.cat((a_feat, lyrics), dim=1)
         
         mu, logvar = self.fc_mu(combined), self.fc_logvar(combined)

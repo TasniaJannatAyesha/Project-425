@@ -10,7 +10,7 @@ from sklearn.metrics import silhouette_score, adjusted_rand_score, normalized_mu
 from sentence_transformers import SentenceTransformer
 from hard_models import BetaVAE, SimpleAutoencoder
 
-# 1. Load and Combine Data (Multi-modal)
+
 df = pd.read_csv("data/Final_Refined_Dataset.csv")
 audio_cols = [f'mfcc_{i}' for i in range(20)] + ['spectral_centroid', 'energy_rms'] + [f'chroma_{i}' for i in range(12)]
 audio_feat = StandardScaler().fit_transform(df[audio_cols].values)
@@ -19,13 +19,13 @@ print("Encoding lyrics for Hard Task...")
 lyric_model = SentenceTransformer('all-MiniLM-L6-v2')
 lyric_embeddings = lyric_model.encode(df['lyrics'].tolist())
 
-# Combine Audio + Lyrics into one big feature vector
+
 X = np.hstack((audio_feat, lyric_embeddings))
 X_tensor = torch.FloatTensor(X)
 true_labels = LabelEncoder().fit_transform(df['genre'])
 
-# 2. Train Beta-VAE (The Champion)
-beta = 4.0 # Beta > 1 encourages disentanglement
+
+beta = 4.0
 model = BetaVAE(input_dim=X.shape[1], latent_dim=32)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
@@ -39,7 +39,7 @@ for epoch in range(60):
     loss.backward()
     optimizer.step()
 
-# 3. Baseline 1: Autoencoder
+
 ae = SimpleAutoencoder(input_dim=X.shape[1], latent_dim=32)
 ae_opt = torch.optim.Adam(ae.parameters(), lr=1e-3)
 for _ in range(60):
@@ -47,13 +47,13 @@ for _ in range(60):
     loss = torch.nn.functional.mse_loss(recon, X_tensor)
     ae_opt.zero_grad(); loss.backward(); ae_opt.step()
 
-# 4. Extract all latent features for comparison
+
 with torch.no_grad():
     _, beta_latent, _ = model(X_tensor)
     _, ae_latent = ae(X_tensor)
 pca_latent = PCA(n_components=32).fit_transform(X)
 
-# 5. Clustering and Evaluation Function
+
 def get_purity(labels, true_labels):
     from sklearn.metrics import confusion_matrix
     cm = confusion_matrix(true_labels, labels)
@@ -73,7 +73,7 @@ run_eval(pca_latent, "PCA + K-Means")
 run_eval(ae_latent.numpy(), "AE + K-Means")
 run_eval(beta_latent.numpy(), "Beta-VAE")
 
-# 6. VISUALIZATION: Cluster Distribution over Genres (For Report)
+
 beta_labels = KMeans(n_clusters=6, random_state=42).fit_predict(beta_latent.numpy())
 df['cluster'] = beta_labels
 plt.figure(figsize=(12, 6))
@@ -82,3 +82,26 @@ plt.title("Cluster Distribution over Genres (Hard Task)")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.savefig("results/cluster_genre_dist.png")
 print("\nVisualization saved to results/cluster_genre_dist.png")
+
+print("Generating t-SNE plot for Beta-VAE...")
+from sklearn.manifold import TSNE
+
+
+tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+beta_tsne = tsne.fit_transform(beta_latent.numpy())
+
+
+plt.figure(figsize=(10, 8))
+sns.scatterplot(
+    x=beta_tsne[:, 0], 
+    y=beta_tsne[:, 1], 
+    hue=df['genre'], 
+    palette='tab10',
+    s=60,
+    alpha=0.8
+)
+plt.title("Beta-VAE Latent Space (t-SNE) - Hard Task")
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig("results/beta_vae_tsne.png")
+print("t-SNE plot saved to results/beta_vae_tsne.png")

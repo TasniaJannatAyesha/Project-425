@@ -4,7 +4,7 @@ import torch.nn as nn
 class BetaVAE(nn.Module):
     def __init__(self, input_dim, latent_dim=32):
         super(BetaVAE, self).__init__()
-        # Encoder
+        
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.BatchNorm1d(256),
@@ -15,7 +15,7 @@ class BetaVAE(nn.Module):
         self.fc_mu = nn.Linear(128, latent_dim)
         self.fc_logvar = nn.Linear(128, latent_dim)
         
-        # Decoder
+       
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 128),
             nn.ReLU(),
